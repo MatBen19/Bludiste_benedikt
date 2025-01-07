@@ -14,50 +14,62 @@ class BludisteApp:
         self.window_sirka = window_width
         self.window_vyska = window_height
 
-        # zavola metodu pro vyber souboru
+        # Create a frame for the canvas and button panel
+        self.canvas_frame = tk.Frame(self.root)
+        self.canvas_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.button_frame = tk.Frame(self.root, width=150, bg="lightgrey")
+        self.button_frame.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Add the "Vyber bludiště" button
+        self.vyber_button = tk.Button(self.button_frame, text="Vyber bludiště", command=self.novy_bludiste)
+        self.vyber_button.pack(pady=20)
+
+        # Initialize maze-related variables
+        self.bludiste = None
+        self.view = None
+        self.robot = None
+        self.robot_view = None
+
+    def novy_bludiste(self):
+        """Allows the user to select a new maze and displays it."""
         cesta_k_souboru = self.vyber_soubor()
 
-        # pokud najde soubor pokracuje dal
         if cesta_k_souboru:
-            # pouzije DAO factory pro spravnou interpretaci dat
+            # Load and process the maze
             dao = BludisteDaoFactory.get_bludiste_dao(cesta_k_souboru)
             bludiste_data = dao.nacti_bludiste(cesta_k_souboru)
 
-            # vytvori instanci tridy Bludiste
+            # Create Bludiste instance
             self.bludiste = Bludiste(bludiste_data)
 
-            # vytvori instanci tridy BludisteView
-            self.view = BludisteView(root, self.bludiste, self.window_sirka, self.window_vyska)
+            # If a previous view exists, clear it
+            if self.view:
+                self.view.canvas.destroy()
+
+            # Create BludisteView
+            self.view = BludisteView(self.canvas_frame, self.bludiste, self.window_sirka, self.window_vyska)
             self.view.vykresli()
 
-            # vypocita sirku a vysku policka
+            # Calculate tile dimensions
             sirka_policka = self.window_sirka // self.bludiste.get_sirka()
             vyska_policka = self.window_vyska // self.bludiste.get_vyska()
 
-            # vytvori instance trid Robot a RobotView
+            # Create Robot and RobotView
             self.robot = Robot(color="blue")
             self.robot_view = RobotView(self.robot, sirka_policka, vyska_policka)
 
-            # vykresli robota na startovni pozici (0, 0)
+            # Draw the robot on the starting position
             self.robot_view.vykresli(self.view.canvas)
 
-            # vyresi si v pameti bludiste - musim dodelat algoritmus
+            # Solve the maze in memory
             self.robot.vyres_bludiste(self.bludiste)
 
-            # to-do: DODELAT PRUCHOD BLUDISTE KROK ZA KROKEM
-
     def vyber_soubor(self):
-        # ziska cestu k aktualni slozce
+        """Opens a file dialog to select a maze file."""
         slozka = os.path.dirname(__file__)
 
-        # Vyfiltruje podporovane soubory
-        soubory = [f for f in os.listdir(slozka) if f.endswith(('.txt', '.xml', '.csv'))]
-
-        if not soubory:
-            print("Žádné podporované soubory nebyly nalezeny.")
-            return None
-
-        # otevre slozku pro vyber podporovaneho souboru
+        # File selection dialog
         soubor = filedialog.askopenfilename(
             title="Vyberte soubor",
             initialdir=slozka,
@@ -76,10 +88,10 @@ def main():
     window_width = 600
     window_height = 450
 
-    # vytvoreni instance aplikace
+    # Create an instance of the app
     app = BludisteApp(root, window_width, window_height)
 
-    # zahajeni hlavni smycky
+    # Start the main loop
     root.mainloop()
 
 
